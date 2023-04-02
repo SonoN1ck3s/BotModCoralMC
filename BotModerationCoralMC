@@ -1,0 +1,177 @@
+const { Client, Intents, MessageEmbed } = require('discord.js');
+const bot = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES], partials: ["MESSAGE", "USER", "REACTION"] });
+const warns = require("./warns.json");
+const fs = require('fs');
+const ms = require('ms');
+
+bot.on("ready", async () => {
+    console.log('-----------HunterSQ-----------');
+    console.log('The Bot is Now Online!');
+    console.log('');
+    console.log('Developed By SonoN1ck3s#2163');
+    console.log('');
+    console.log('-----------HunterSQ-----------')
+    bot.user.setActivity('dsc.gg/huntersq', {type: 'WATCHING'});
+});
+
+bot.on('messageCreate', async message => {
+    if (message.author.bot || message.channel.type === 'dm') return;
+    let prefix = 's!';
+    
+    let messageArray = message.content.split(" ");
+    let cmd = messageArray[0].toLowerCase();
+    let args = messageArray.slice(1);
+
+
+    const mutedroleid = '1091698469112139836';
+    const mutedrole = message.guild.roles.cache.get(mutedroleid);
+
+//Comando per Bannare
+//Sintassi: s!ban (utente) (Reason)
+    if (cmd === `${prefix}ban`) {
+        if(!message.member.permissions.has("BAN_MEMBERS")) return message.reply(":x: You do not have permission to run this command since you are not Staff!");
+        const user = message.mentions.users.first();
+        if (!user) return message.reply(":x: You must specify the user you want to ban!. **Syntax s!ban (user) (reason)**");
+        if(user.id === message.author.id) return message.reply(":x: You can't ban yourself!");
+        const reason = args.slice(1).join(" ");
+        message.guild.members.cache.get(user.id).ban({reason: reason});
+ 
+        const banmessage = new MessageEmbed()
+        .setColor("#000000")
+        .setDescription(`${user}  was successfully banned! Reason: **${reason != "" ? reason : "-"}**`);
+        message.channel.send({ embeds: [banmessage] });
+    }
+
+  //Comando per Kickare
+  //Sintassi: s!kick (utente) (reason)
+    if (cmd === `${prefix}kick`) {
+        if(!message.member.permissions.has("KICK_MEMBERS")) return message.reply(":x: You do not have permission to run this command since you are not Staff!");
+        const user = message.mentions.users.first();
+        if (!user) return message.reply(":x: You must specify the user you want to kick!. **Syntax s!kick (user) (reason)**");
+        if(user.id === message.author.id) return message.reply(":x: You can't kick yourself");
+        const reason = args.slice(1).join(" ");
+        message.guild.members.cache.get(user.id).kick(reason);
+ 
+        const kickmessage = new MessageEmbed()
+        .setColor("#000000")
+        .setDescription(`${user}  was successfully kicked! Reason: **${reason != "" ? reason : "-"}**`);
+        message.channel.send({ embeds: [kickmessage] });
+    }
+
+   //Comando per mutare
+   //Sintassi: s!mute (utente) (durata)
+    if (cmd === `${prefix}mute`) {
+        if(!message.member.permissions.has("MUTE_MEMBERS")) return message.reply(":x: You do not have permission to run this command since you are not Staff!");
+        const user = message.mentions.users.first();
+        if (!user) return message.reply(":x: You must specify the user you want to kick!. **Syntax s!mute (user) (reason)**");
+        const target = message.guild.members.cache.get(user.id);
+        if(user.id === message.author.id) return message.reply("You can't mute yourself");
+        if(target.roles.cache.has(mutedroleid)) return message.reply(":x: This User has already been muted!");
+        if(!mutedrole) return message.reply(":x: ERROR: I can't find the Mute Role!");
+
+        const reason = args.slice(2).join(" ");
+        let time = args[1];
+        if (!time) time = "1h";
+
+
+        target.roles.add(mutedrole.id);
+        const embed = new MessageEmbed()
+        .setColor("#000000")
+        .setDescription(`${user} was successfully muted by ${message.author} for ${ms(ms(time))}.\nReason: **${reason != "" ? reason : "-"}**`)
+
+        message.channel.send({ embeds: [embed] });
+        
+        setTimeout(() => {
+            target.roles.remove(mutedrole.id);
+            const unmute = new MessageEmbed()
+            .setColor("#000000")
+            .setDescription(`${user} has been successfully unmuted!`);
+            message.channel.send({ embeds: [unmute] });
+        }, ms(time));
+    }
+
+    //Comando per smutare
+    //s!unmute (utente) (reason)
+    if (cmd === `${prefix}unmute`) {
+        if(!message.member.permissions.has("MUTE_MEMBERS")) return message.reply(":x: You do not have permission to run this command since you are not Staff!");
+        const user = message.mentions.users.first();
+        if (!user) return message.reply(":x: You must specify the user you want to unmute!. **Syntax s!unmute (user) (reason)**");
+        const target = message.guild.members.cache.get(user.id);
+        if(!target.roles.cache.has(mutedroleid)) return message.reply("This User isn't Muted");
+        if(user.id === message.author.id) return message.reply(":x: You can't unmute yourself");
+        if(!mutedrole) return message.reply(":x: ERROR: I can't find the Mute Role!");
+
+        const reason = args.slice(1).join(" ");
+        target.roles.remove(mutedrole.id);
+        const unmute = new MessageEmbed()
+        .setColor("#000000")
+        .setDescription(`${user} was successfully muted by ${message.author}.\nReason: **${reason != "" ? reason : "-"}**`);
+        message.channel.send({ embeds: [unmute] });
+    }
+
+    //Comando per Warnare
+    //s!warn (utente) (reason)
+    if (cmd === `${prefix}warn`) {
+        if(!message.member.permissions.has("MUTE_MEMBERS")) return message.reply(":x: You do not have permission to run this command since you are not Staff!");
+        const user = message.mentions.users.first();
+        if (!user) return message.reply(":x: You must specify the user you want Warnare! **Syntax** s!warn (user) (reason)");
+        const target = message.guild.members.cache.get(user.id);
+        if(target.roles.cache.has(mutedroleid)) return message.reply(":x: You cannot warn Mutated users");
+        if(!mutedrole) return message.reply(":x: ERROR: I can't find the Mute Role!");
+
+        const reason = args.slice(1).join(" ");
+
+        if (!warns[user.id]) {
+            warns[user.id] = {
+                warnCount: 1
+            }
+        } else {
+            warns[user.id].warnCount += 1;
+        }
+
+        if(warns[user.id].warnCount >= 5) {
+            const mute = new MessageEmbed()
+            .setColor("#000000")
+            .setDescription(`${user} was successfully mutated after 5 Warns. (**5**/**5**)\nReason: **${reason != "" ? reason : "-"}**`);
+            message.channel.send({ embeds: [mute] });
+            
+            target.roles.add(mutedrole.id);
+            warns[user.id].warnCount = 0;
+    
+            setTimeout(() => {
+                target.roles.remove(mutedrole.id);
+                const unmute = new MessageEmbed()
+                .setColor("#000000")
+                .setDescription(`${user} has been successfully muted!`);
+                message.channel.send({ embeds: [unmute] });
+            }, 1000 * 900);
+
+        } else {
+            const warn = new MessageEmbed()
+            .setColor("#000000")
+            .setDescription(`${user} has been successfully warned by ${message.author}. (**${warns[user.id].warnCount}**/**5**) \nReason: **${reason != "" ? reason : "-"}**`);
+            message.channel.send({ embeds: [warn] });
+        }
+
+        fs.writeFile("./warns.json", JSON.stringify(warns), err => {
+            if (err) console.log(err);
+
+            
+        });
+
+    }
+
+});
+
+bot.login('MTA4OTYxMzM1Mjc5MzI5Mjk2MA.GguO2D.-CQ4aVx1bOj_Ct7ZojjbJWnmZZLnkyFclNd1PU'); //METTI IL TOKEN DEL BOT QUA
+
+
+
+
+
+//Developed With Love By SonoN1ck3s#2163
+
+//dsc.gg/huntersq
+
+
+//<3
